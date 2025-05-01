@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Ubuntu EC2 with Nginx behind Classic Load Balancer, all using the same security group
+
+Parameters:
+  UbuntuAmiId:
+    Type: AWS::EC2::Image::Id
+    Description: AMI ID of the Ubuntu image
+
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC where the resources will be deployed
+
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: List of one or more subnet IDs for EC2 and Load Balancer
+
+Resources:
+  SharedSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTP and SSH traffic
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref UbuntuAmiId
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          SubnetId: !Select [0, !Ref SubnetIds]
+          GroupSet:
+            - !Ref SharedSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt update -y
+          apt install -y nginx
+          echo "Welcome to My Home Page" > /var/www/html/index.html
+          systemctl enable nginx
+          systemctl start nginx
+
+  ClassicELB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      Subnets: !Ref SubnetIds
+      SecurityGroups:
+        - !Ref SharedSecurityGroup
+      Scheme: internet-facing
+      Listeners:
+        - LoadBalancerPort: 80
+          InstancePort: 80
+          Protocol: HTTP
+      HealthCheck:
+        Target: HTTP:80/
+        HealthyThreshold: 2
+        UnhealthyThreshold: 5
+        Interval: 30
+        Timeout: 5
+      Instances:
+        - !Ref EC2Instance
+
+Outputs:
+  LoadBalancerDNS:
+    Description: Public DNS of the Classic Load Balancer
+    Value: !GetAtt ClassicELB.DNSName

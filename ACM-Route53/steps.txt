@@ -1,0 +1,9 @@
+Task for Creating ALB:
+
+Step 1 execute EC2CreateAttach2CLassicLB via CFN-- this script will be used to create EC2 Ubuntu 24 Instance in ap1-south Mumbai Region with default VPC and subnet attached to it. Create EC2 instance with nginix on it and it will be attached to classic load balancer created with this script
+
+Step 2: CreateHostedzone.yaml this script will create hosted zone under rout53 for vishalrkanth.site
+
+Step 3: Manually add ns details created from above steps to--open godaddy on your DNS option select  nameserver , click on change nameserver 
+
+Step 4: attach load balancer to hosted zone

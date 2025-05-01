@@ -1,0 +1,14 @@
+Task for Creating ALB:
+
+Step 1 execute ece2instanceCreate.yaml via CFN-- this script will be used to create EC2 Ubuntu 24 Instance in ap1-south Mumbai Regionwith default VPC and subnet attached to it. This will take KeyPairName as input
+
+Step 2: once above ec2 is created a manual step will be followed to create AMI image for created ec2 instance
+
+Step 3: asgCreate.yaml will be run to create ASG , this will take AmiId and KeyPairName as input
+
+Task for Creating NLB:
+
+Step 1 execute ece2instanceCreate.yaml twice via CFN-- this script will be used to create 2 EC2 Ubuntu 24 Instance in ap1-south Mumbai Regionwith default VPC and subnet attached to it. This will take KeyPairName as input. Each Instance will have different home page
+
+Step 2: execute createALB.yaml : This script will create 2 Target Group Home-TG and Details-TZ and each EC2 instance will be attached to these 2 target groups individually.
+Application will redirect to details-tg if ur will have /index.html in it
